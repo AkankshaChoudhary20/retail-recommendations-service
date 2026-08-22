@@ -1,0 +1,245 @@
+openapi: 3.1.0
+info:
+  title: retail-store-sample-recommendations
+  description: Item-based product recommendations for the retail-store-sample-app
+  version: 0.1.0
+paths:
+  /metrics:
+    get:
+      summary: Metrics
+      description: Endpoint that serves Prometheus metrics.
+      operationId: metrics_metrics_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /health/liveness:
+    get:
+      tags:
+      - health
+      summary: Liveness
+      operationId: liveness_health_liveness_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /health/readiness:
+    get:
+      tags:
+      - health
+      summary: Readiness
+      operationId: readiness_health_readiness_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /recommendations/products/{product_id}:
+    get:
+      tags:
+      - recommendations
+      summary: Related Products
+      description: '"Customers who bought this also bought" for a single product.
+
+
+        Falls back to global popularity when there isn''t yet enough co-purchase
+
+        data for this product (cold start), so the endpoint always returns
+
+        something useful.'
+      operationId: related_products_recommendations_products__product_id__get
+      parameters:
+      - name: product_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Product Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 25
+          minimum: 1
+          default: 5
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /recommendations/popular:
+    get:
+      tags:
+      - recommendations
+      summary: Popular Products
+      description: Store-wide trending products, e.g. for a homepage "Popular right
+        now" rail.
+      operationId: popular_products_recommendations_popular_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 25
+          minimum: 1
+          default: 5
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /internal/events/order-created:
+    post:
+      tags:
+      - internal
+      summary: Ingest Order Created
+      operationId: ingest_order_created_internal_events_order_created_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreatedEvent'
+        required: true
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    Order:
+      properties:
+        id:
+          type: string
+          title: Id
+        orderItems:
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          type: array
+          title: Orderitems
+      type: object
+      required:
+      - id
+      title: Order
+    OrderCreatedEvent:
+      properties:
+        order:
+          $ref: '#/components/schemas/Order'
+      type: object
+      required:
+      - order
+      title: OrderCreatedEvent
+      description: Mirrors orders/events/order-created-event.schema.json.
+    OrderItem:
+      properties:
+        productId:
+          type: string
+          title: Productid
+        quantity:
+          type: integer
+          title: Quantity
+          default: 1
+      type: object
+      required:
+      - productId
+      title: OrderItem
+    RecommendationItem:
+      properties:
+        productId:
+          type: string
+          title: Productid
+        score:
+          type: number
+          title: Score
+      type: object
+      required:
+      - productId
+      - score
+      title: RecommendationItem
+    RecommendationResponse:
+      properties:
+        productId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Productid
+        strategy:
+          type: string
+          title: Strategy
+        recommendations:
+          items:
+            $ref: '#/components/schemas/RecommendationItem'
+          type: array
+          title: Recommendations
+      type: object
+      required:
+      - strategy
+      - recommendations
+      title: RecommendationResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError

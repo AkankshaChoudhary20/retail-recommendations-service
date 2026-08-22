@@ -1,0 +1,60 @@
+services:
+  recommendations:
+    build:
+      context: .
+    hostname: recommendations
+    restart: always
+    cap_drop:
+      - all
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid
+    environment:
+      - RETAIL_RECOMMENDATIONS_REDIS_URL=redis://recommendations-redis:6379/0
+      - RETAIL_RECOMMENDATIONS_MESSAGING_PROVIDER=rabbitmq
+      - RETAIL_RECOMMENDATIONS_MESSAGING_RABBITMQ_ADDRESSES=rabbitmq:5672
+      - RETAIL_RECOMMENDATIONS_MESSAGING_RABBITMQ_USERNAME=rabbitmq
+      - RETAIL_RECOMMENDATIONS_MESSAGING_RABBITMQ_PASSWORD=${DB_PASSWORD:-rabbitmq}
+    ports:
+      - "8087:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/health/liveness')\" || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      recommendations-redis:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: app
+        - action: rebuild
+          path: requirements.txt
+
+  recommendations-redis:
+    image: redis:6.0-alpine
+    hostname: recommendations-redis
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  # Optional: point this at the same RabbitMQ instance the orders service
+  # publishes to (see src/orders/docker-compose.yml in the main repo) if you
+  # want to see live order events flow in. Included here so this project can
+  # also be run standalone.
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: rabbitmq
+    restart: always
+    environment:
+      - RABBITMQ_DEFAULT_USER=rabbitmq
+      - RABBITMQ_DEFAULT_PASS=${DB_PASSWORD:-rabbitmq}
+    ports:
+      - "5672:5672"
+      - "8161:15672"
