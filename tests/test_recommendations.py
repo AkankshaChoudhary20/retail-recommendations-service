@@ -58,3 +58,24 @@ async def test_liveness_and_readiness(fake_redis):
         ready = await client.get("/health/readiness")
     assert live.status_code == 200
     assert ready.status_code == 200
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("quantity", [0, -1, 1.5, True, "2"])
+async def test_invalid_quantity_is_rejected_without_recording(quantity, fake_redis):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/internal/events/order-created", json={
+            "order": {"id": "invalid", "orderItems": [{"productId": "A", "quantity": quantity}]}
+        })
+    assert response.status_code == 422
+    assert await fake_redis.zcard("popularity:global") == 0
+
+
+@pytest.mark.asyncio
+async def test_positive_quantity_is_accepted(fake_redis):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/internal/events/order-created", json={
+            "order": {"id": "valid", "orderItems": [{"productId": "A", "quantity": 2}]}
+        })
+    assert response.status_code == 202
+    assert await fake_redis.zscore("popularity:global", "A") == 1
