@@ -178,6 +178,7 @@ components:
           title: Productid
         quantity:
           type: integer
+          exclusiveMinimum: 0.0
           title: Quantity
           default: 1
       type: object
