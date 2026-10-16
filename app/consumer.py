@@ -21,7 +21,9 @@ _task: asyncio.Task | None = None
 
 
 async def _handle_message(message: aio_pika.abc.AbstractIncomingMessage) -> None:
-    async with message.process():
+    # Storage failures must remain retryable. Invalid payloads are handled
+    # below and acknowledged so poison messages do not loop forever.
+    async with message.process(requeue=True):
         try:
             payload = json.loads(message.body)
             event = OrderCreatedEvent.model_validate(payload)
