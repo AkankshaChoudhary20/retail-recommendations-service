@@ -66,5 +66,12 @@ def start() -> None:
 
 
 async def stop() -> None:
-    if _task is not None:
-        _task.cancel()
+    global _task
+    task, _task = _task, None
+    if task is not None:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
