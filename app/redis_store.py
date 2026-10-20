@@ -44,12 +44,16 @@ async def record_order(product_ids: list[str]) -> None:
 
 
 async def get_related(product_id: str, limit: int) -> list[tuple[str, float]]:
+    if limit <= 0:
+        return []
     client = get_client()
     pairs = await client.zrevrange(f"cooccur:{product_id}", 0, limit - 1, withscores=True)
     return [(member, score) for member, score in pairs]
 
 
 async def get_popular(limit: int, exclude: set[str] | None = None) -> list[tuple[str, float]]:
+    if limit <= 0:
+        return []
     client = get_client()
     # Over-fetch a little so we can drop excluded ids without a second round trip.
     fetch = limit + len(exclude or [])
@@ -62,3 +66,4 @@ async def get_popular(limit: int, exclude: set[str] | None = None) -> list[tuple
 async def ping() -> bool:
     client = get_client()
     return await client.ping()
+
