@@ -1,9 +1,16 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class OrderItem(BaseModel):
     productId: str
     quantity: int = Field(default=1, gt=0, strict=True)
+
+    @field_validator("productId")
+    @classmethod
+    def nonblank_product_id(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("productId must not be empty or whitespace")
+        return value
 
 
 class Order(BaseModel):
