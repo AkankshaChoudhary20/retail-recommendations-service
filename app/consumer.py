@@ -62,6 +62,8 @@ def start() -> None:
     if settings.messaging_provider != "rabbitmq":
         logger.info("Messaging provider is %r, order event consumer disabled", settings.messaging_provider)
         return
+    if _task is not None and not _task.done():
+        return
     _task = asyncio.create_task(_run())
 
 
