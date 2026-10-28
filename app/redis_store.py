@@ -32,7 +32,8 @@ async def record_order(product_ids: list[str]) -> None:
         return
 
     client = get_client()
-    pipe = client.pipeline(transaction=False)
+    # Publish popularity and both directions of every pair atomically.
+    pipe = client.pipeline(transaction=True)
 
     for product_id in distinct:
         pipe.zincrby("popularity:global", 1, product_id)
