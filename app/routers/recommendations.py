@@ -21,10 +21,12 @@ async def related_products(
     related = await get_related(product_id, limit)
     strategy = "item-cooccurrence"
 
-    if not related:
-        popular = await get_popular(limit, exclude={product_id})
-        related = popular
-        strategy = "popular-fallback"
+    if len(related) < limit:
+        excluded = {product_id} | {item_id for item_id, _ in related}
+        popular = await get_popular(limit - len(related), exclude=excluded)
+        if not related:
+            strategy = "popular-fallback"
+        related.extend(popular)
 
     return RecommendationResponse(
         productId=product_id,

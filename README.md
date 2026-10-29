@@ -21,8 +21,10 @@ Item-based collaborative filtering with no offline training step:
   a Redis sorted set per product: `cooccur:{productId}` scores every other
   product that showed up in the same order.
 - `GET /recommendations/products/{id}` returns the top co-purchased
-  products for `id`. If a product has no purchase history yet (cold start),
-  it falls back to store-wide popularity instead of returning nothing.
+  products for `id`, then fills any remaining slots with store-wide popular
+  products. The requested product and existing results are excluded from
+  this fallback. The strategy remains `item-cooccurrence` when related
+  products lead the results, or `popular-fallback` for a cold start.
 - `GET /recommendations/popular` returns the most-purchased products overall.
 
 Written in Python (FastAPI + Redis + aio-pika), a deliberately different
