@@ -13,8 +13,10 @@ logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     consumer.start()
-    yield
-    await consumer.stop()
+    try:
+        yield
+    finally:
+        await consumer.stop()
 
 
 app = FastAPI(
