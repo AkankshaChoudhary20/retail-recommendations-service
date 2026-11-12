@@ -48,8 +48,8 @@ async def get_related(product_id: str, limit: int) -> list[tuple[str, float]]:
     if limit <= 0:
         return []
     client = get_client()
-    pairs = await client.zrevrange(f"cooccur:{product_id}", 0, limit - 1, withscores=True)
-    return [(member, score) for member, score in pairs]
+    pairs = await client.zrevrange(f"cooccur:{product_id}", 0, limit, withscores=True)
+    return [(member, score) for member, score in pairs if member != product_id][:limit]
 
 
 async def get_popular(limit: int, exclude: set[str] | None = None) -> list[tuple[str, float]]:
