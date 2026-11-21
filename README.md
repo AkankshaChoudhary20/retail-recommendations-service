@@ -48,8 +48,12 @@ Without Docker:
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 export RETAIL_RECOMMENDATIONS_MESSAGING_PROVIDER=none  # skip RabbitMQ for local dev
-uvicorn app.main:app --reload --port 8080
+uvicorn app.main:app --reload --port 8087
 ```
+
+The native process still needs Redis. Start it before running Uvicorn, or set
+`RETAIL_RECOMMENDATIONS_REDIS_URL` to an existing Redis instance. Check the
+connection with `curl -fsS http://localhost:8087/health/readiness`.
 
 ## API
 
