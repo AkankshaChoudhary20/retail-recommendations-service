@@ -10,6 +10,7 @@ import json
 import logging
 
 import aio_pika
+from pydantic import ValidationError
 
 from app.config import settings
 from app.models import OrderCreatedEvent
@@ -27,7 +28,7 @@ async def _handle_message(message: aio_pika.abc.AbstractIncomingMessage) -> None
         try:
             payload = json.loads(message.body)
             event = OrderCreatedEvent.model_validate(payload)
-        except Exception:
+        except (json.JSONDecodeError, UnicodeDecodeError, ValidationError):
             logger.exception("Discarding unparseable order-created message")
             return
 
